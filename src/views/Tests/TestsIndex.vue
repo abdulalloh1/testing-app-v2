@@ -77,7 +77,7 @@
                 <v-btn
                     class="d-flex"
                     style="width: 100%; text-align: left; justify-content: flex-start"
-                    @click="duplicateTest(index)"
+                    @click="duplicateTest(test, index)"
                 >
                   <v-icon
                       class="mr-2"
@@ -168,6 +168,7 @@ export default {
       return this.testsData.filter(test => {
         let testName = test.name.toLowerCase(),
             searchingName = this.searchingTestName.toLowerCase();
+
         return testName.includes(searchingName);
       })
     }
@@ -176,8 +177,8 @@ export default {
     deleteTest(index) {
       this.testsData.splice(index, 1)
     },
-    duplicateTest(selectedTestIndex) {
-      let selectedTest = deepClone(this.testsData[selectedTestIndex]);
+    duplicateTest(test, selectedTestIndex) {
+      let selectedTest = deepClone(test);
       selectedTest.id = +new Date();
       selectedTest.name = '(Duplicated) ' + selectedTest.name
       this.testsData.splice(selectedTestIndex + 1, 0, selectedTest)

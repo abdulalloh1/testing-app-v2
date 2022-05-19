@@ -1,38 +1,50 @@
 <template>
-  <div v-if="loaded">
+  <div>
     <div class="mb-4">
       <p class="mb-2">
         Название тестирование
       </p>
       <v-text-field
-          v-model.trim="testData.name"
+          v-model.trim="test.name"
           solo
           dense
           flat
           outlined
           hide-details
       />
+      <p
+          :class="['error--text', {
+            'active': checkForErrorExistence('test-name')
+          }]"
+      >
+        Заполните полю!
+      </p>
     </div>
-    <div class="d-flex align-end mb-6">
+    <div class="d-flex mb-6">
       <div style="width: 400px">
-        <p
-            class="mb-2"
-        >
+        <p class="mb-2">
           Продолжительность (минут)
         </p>
         <v-text-field
             type="number"
-            v-model.number="testData.duration"
+            v-model.number="test.duration"
             solo
             dense
             flat
             outlined
             hide-details
         />
+        <p
+            :class="['error--text', {
+            'active': checkForErrorExistence('test-duration')
+          }]"
+        >
+          Заполните полю!
+        </p>
       </div>
       <div
-          class="d-flex align-center ml-10"
-          style="min-height: 40px"
+          class="d-flex align-center ml-10 mt-7"
+          style="min-height: 40px; height: fit-content"
       >
         <label
             for="randomSwitcher"
@@ -42,7 +54,7 @@
         </label>
         <v-switch
             id="randomSwitcher"
-            v-model="testData.randomize"
+            v-model="test.randomize"
             hide-details
             class="ma-0"
         />
@@ -51,16 +63,35 @@
     <div class="d-flex">
     </div>
     <h3 class="mb-4">
-      Вопросы ({{testData.questions.length}})
+      Вопросы ({{test.questions.length}})
+
     </h3>
+    <p
+        :class="['error--text', {
+            'active': checkForErrorExistence('no-question')
+          }]"
+    >
+      Добавьте минимум один вопрос!
+    </p>
     <v-card
         class="pa-4 mb-6"
-        v-for="(question, questionIndex) of testData.questions"
+        v-for="(question, questionIndex) of test.questions"
         :key="question.id"
     >
-      <h4 class="mb-2">
-        Вопрос №{{questionIndex + 1}}
-      </h4>
+      <div class="d-flex mb-2">
+        <h4>
+          Вопрос №{{questionIndex + 1}}
+        </h4>
+        <v-btn
+            icon
+            class="ml-auto"
+            @click="deleteQuestion(questionIndex)"
+        >
+          <v-icon color="red">
+            mdi-delete
+          </v-icon>
+        </v-btn>
+      </div>
       <p class="mb-2">
         Название вопроса
       </p>
@@ -96,7 +127,7 @@
           <v-btn
               icon
               class="ml-2"
-              @click="deleteOptionFromQuestion(optionIndex, questionIndex)"
+              @click="deleteOptionFromQuestion(question.options, optionIndex)"
           >
             <v-icon color="red">
               mdi-delete
@@ -108,14 +139,14 @@
           depressed
           class="ml-8 d-flex"
           small
-          @click="addOptionToQuestion(question)"
+          @click="addOptionToQuestion(question.options)"
       >
         Добавить вариант
       </v-btn>
     </v-card>
     <v-card class="pa-4">
       <h4 class="mb-2">
-        Новый вопрос №{{testData.questions.length + 1}}
+        Новый вопрос №{{test.questions.length + 1}}
       </h4>
       <p class="mb-2">
         Название вопроса
@@ -152,7 +183,7 @@
           <v-btn
               icon
               class="ml-2"
-              @click="deleteOptionFromQuestion(optionIndex)"
+              @click="deleteOptionFromQuestion(newQuestion.options, optionIndex)"
           >
             <v-icon color="red">
               mdi-delete
@@ -164,7 +195,7 @@
           depressed
           class="ml-8 d-flex"
           small
-          @click="addOptionToQuestion()"
+          @click="addOptionToQuestion(newQuestion.options)"
       >
         Добавить вариант
       </v-btn>
@@ -183,8 +214,7 @@
     <v-btn
         color="success"
         class="ml-auto mt-6 d-flex"
-        :disabled="isSubmitBtnDisabled"
-        @click="submitData"
+        @click="submit"
     >
       Подтвердить
     </v-btn>
@@ -192,25 +222,22 @@
 </template>
 
 <script>
-import {minOptionsAmount} from "@/constants/minOptionsAmount";
 
 export default {
   name: "TestSingleEditor",
   props: {
-    value: {
-      type: [Array, Object],
-      default: () => {}
-    }
-  },
-  computed: {
-    isSubmitBtnDisabled() {
-      return !this.value.name || !this.value.questions.length
+    testForOverWrite: {
+      type: Object,
+      default: null
     }
   },
   data:() => ({
-    loaded: false,
-
-    testData: '',
+    test: {
+      name: '',
+      duration: '',
+      randomize: false,
+      questions: []
+    },
     newQuestion: {
       title: '',
       options: [
@@ -220,33 +247,45 @@ export default {
         }
       ],
       correctAnswer: null
-    }
+    },
+
+    errors: []
   }),
   methods: {
-    addOptionToQuestion(question) {
-      let options = question ? question.options : this.newQuestion.options;
+    checkForErrorExistence(error) {
+      return this.errors.includes(error);
+    },
+
+    testValidation() {
+      let error = false
+
+      if(!this.test.name) {
+        this.errors.push('test-name');
+        error = true;
+      }
+      if(!this.test.duration) {
+        this.errors.push('test-duration');
+        error = true;
+      }
+      if(!this.test.questions.length) {
+        this.errors.push('no-question');
+        error = true;
+      }
+
+      return error ? this.$toast.error('Заполните все необходимые поля!') : false;
+    },
+
+    addOptionToQuestion(options) {
       options.push({
         id: +new Date(),
         text: ''
       })
     },
-    deleteOptionFromQuestion(deletingOptionIndex, deletingFromQuestionIndex) {
-      if(deletingFromQuestionIndex !== undefined) {
-        return this.testData.questions[deletingFromQuestionIndex].options.splice(deletingOptionIndex, 1)
-      }
-      return this.newQuestion.options.splice(deletingOptionIndex, 1)
+    deleteOptionFromQuestion(options, optionIndex) {
+      return options.splice(optionIndex, 1)
     },
     addNewQuestion() {
-      if(this.newQuestion.options.length < minOptionsAmount) return;
-      let error = false;
-      for(let option of this.newQuestion.options) {
-        if(!option.text) {
-          error = true;
-          break;
-        }
-      }
-      if(!this.newQuestion.title || error) return;
-      this.testData.questions.push(this.newQuestion);
+      this.test.questions.push(this.newQuestion);
       this.newQuestion = {
         title: '',
         options: [
@@ -258,23 +297,31 @@ export default {
         correctAnswer: null
       }
     },
+    deleteQuestion(questionIndex) {
+      this.test.questions.splice(questionIndex, 1)
+    },
 
-    submitData(){
-      this.$emit('submit');
+    submit(){
+      this.testValidation()
+      if (this.errors.length) return;
+      this.$emit('submit', this.test);
     }
   },
   created() {
-    this.testData = this.value;
-    this.loaded = true;
-  },
-  watch: {
-    testData(newValue) {
-      this.$emit('update:value', newValue)
-    }
+    if(this.testForOverWrite) this.test = this.testForOverWrite
   }
 }
 </script>
 
-<style scoped>
-
+<style lang="scss" scoped>
+.error--text{
+  margin-top: 10px;
+  margin-bottom: -24px;
+  transition: all .4s ease;
+  opacity: 0;
+  &.active {
+    margin-bottom: 16px;
+    opacity: 1;
+  }
+}
 </style>
