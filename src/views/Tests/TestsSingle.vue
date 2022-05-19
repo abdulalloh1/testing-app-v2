@@ -1,7 +1,10 @@
 <template>
   <section>
     <h1 class="mb-4">Основная информация</h1>
-    <test-single-editor v-model="test"/>
+    <test-single-editor
+        v-model="test"
+        @submit="updateTest()"
+    />
   </section>
 </template>
 
@@ -40,7 +43,12 @@ export default {
         }
       ]
     }
-  })
+  }),
+  methods: {
+    updateTest() {
+      console.log(this.test)
+    }
+  }
 }
 </script>
 

@@ -108,7 +108,7 @@
           depressed
           class="ml-8 d-flex"
           small
-          @click="addOptionToQuestion(questionIndex)"
+          @click="addOptionToQuestion(question)"
       >
         Добавить вариант
       </v-btn>
@@ -180,16 +180,31 @@
         Добавить вопрос
       </v-btn>
     </v-card>
+    <v-btn
+        color="success"
+        class="ml-auto mt-6 d-flex"
+        :disabled="isSubmitBtnDisabled"
+        @click="submitData"
+    >
+      Подтвердить
+    </v-btn>
   </div>
 </template>
 
 <script>
+import {minOptionsAmount} from "@/constants/minOptionsAmount";
+
 export default {
   name: "TestSingleEditor",
   props: {
     value: {
       type: [Array, Object],
       default: () => {}
+    }
+  },
+  computed: {
+    isSubmitBtnDisabled() {
+      return !this.value.name || !this.value.questions.length
     }
   },
   data:() => ({
@@ -208,32 +223,21 @@ export default {
     }
   }),
   methods: {
-    addOptionToQuestion(questionIndex) {
-      let options;
-      if(questionIndex !== undefined) {
-        options = this.testData.questions[questionIndex].options
-      } else {
-        options = this.newQuestion.options
-      }
-      if(options[options.length - 1].text) {
-        options.push({
-          id: +new Date(),
-          text: ''
-        })
-      }
+    addOptionToQuestion(question) {
+      let options = question ? question.options : this.newQuestion.options;
+      options.push({
+        id: +new Date(),
+        text: ''
+      })
     },
     deleteOptionFromQuestion(deletingOptionIndex, deletingFromQuestionIndex) {
       if(deletingFromQuestionIndex !== undefined) {
-        if(this.testData.questions[deletingFromQuestionIndex].options.length > 2) {
-          this.testData.questions[deletingFromQuestionIndex].options.splice(deletingOptionIndex, 1)
-        }
+        return this.testData.questions[deletingFromQuestionIndex].options.splice(deletingOptionIndex, 1)
       }
-      else {
-        return this.newQuestion.options.length > 1 ? this.newQuestion.options.splice(deletingOptionIndex, 1) : ''
-      }
+      return this.newQuestion.options.splice(deletingOptionIndex, 1)
     },
     addNewQuestion() {
-      if(this.newQuestion.options.length < 2) return;
+      if(this.newQuestion.options.length < minOptionsAmount) return;
       let error = false;
       for(let option of this.newQuestion.options) {
         if(!option.text) {
@@ -253,6 +257,10 @@ export default {
         ],
         correctAnswer: null
       }
+    },
+
+    submitData(){
+      this.$emit('submit');
     }
   },
   created() {

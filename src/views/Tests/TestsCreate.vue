@@ -1,14 +1,10 @@
 <template>
   <section>
     <h1 class="mb-4">Создать новое тестирование</h1>
-    <test-single-editor v-model="newTest"/>
-    <v-btn
-        color="success"
-        class="ml-auto mt-6 d-flex"
-        :disabled="isSubmitBtnDisabled"
-    >
-      Создать новое тестирование
-    </v-btn>
+    <test-single-editor
+        v-model="newTest"
+        @submit="createTest()"
+    />
   </section>
 </template>
 
@@ -26,9 +22,9 @@ export default {
       questions: []
     },
   }),
-  computed: {
-    isSubmitBtnDisabled() {
-      return !this.newTest.name || !this.newTest.questions.length
+  methods: {
+    createTest() {
+      console.log(this.newTest)
     }
   }
 }
